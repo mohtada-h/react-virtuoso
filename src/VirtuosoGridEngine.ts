@@ -19,6 +19,10 @@ const { ceil, floor, min, max } = Math
 
 const hackFloor = (val: number) => (ceil(val) - val < 0.03 ? ceil(val) : floor(val))
 
+const calculateItemsPerRow = (viewportWidth: number, itemWidth: number) => hackFloor(viewportWidth / itemWidth)
+
+const toRowIndex = (index: number, itemsPerRow: number, roundFunc = floor) => roundFunc(index / itemsPerRow)
+
 export const VirtuosoGridEngine = (initialItemCount = 0) => {
   const gridDimensions$ = subject<GridDimensions>([0, 0, undefined, undefined])
   const totalCount$ = subject(0)
@@ -47,11 +51,7 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
         }
 
         const [startIndex, endIndex] = itemRange
-        const itemsPerRow = hackFloor(viewportWidth / itemWidth)
-
-        const toRowIndex = (index: number, roundFunc = floor) => {
-          return roundFunc(index / itemsPerRow)
-        }
+        const itemsPerRow = calculateItemsPerRow(viewportWidth, itemWidth)
 
         const updateRange = (down: boolean): void => {
           const [topOverscan, bottomOverscan] = down ? [0, overscan] : [overscan, 0]
@@ -64,12 +64,12 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
           startIndex = min(endIndex, max(0, startIndex))
 
           itemRange$.next([startIndex, endIndex])
-          listOffset$.next(toRowIndex(startIndex) * itemHeight)
+          listOffset$.next(toRowIndex(startIndex, itemsPerRow) * itemHeight)
           rangeChanged$.next({ startIndex, endIndex })
         }
 
-        const listTop = itemHeight * toRowIndex(startIndex)
-        const listBottom = itemHeight * toRowIndex(endIndex) + itemHeight
+        const listTop = itemHeight * toRowIndex(startIndex, itemsPerRow)
+        const listBottom = itemHeight * toRowIndex(endIndex, itemsPerRow) + itemHeight
 
         // totalCount has decreased, we have to re-render
         if (totalCount < endIndex - 1) {
@@ -81,8 +81,6 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
         } else if (listBottom < scrollTop + viewportHeight) {
           updateRange(true)
         }
-
-        remainingHeight$.next(itemHeight * toRowIndex(totalCount - endIndex - 1, ceil))
       }
     )
 
@@ -132,6 +130,25 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
       }
     }
   })
+
+  combineLatest(gridDimensions$, totalCount$, itemRange$).subscribe(
+    ([[viewportWidth, _, itemWidth, itemHeight], totalCount, itemRange]) => {
+      if (itemWidth === undefined || itemHeight === undefined) {
+        return
+      }
+
+      if (totalCount === 0) {
+        remainingHeight$.next(0)
+        return
+      }
+
+      const [, endIndex] = itemRange
+      const itemsPerRow = calculateItemsPerRow(viewportWidth, itemWidth)
+      const remainingCount = toRowIndex(max(totalCount - endIndex - 1, 0), itemsPerRow, ceil)
+
+      remainingHeight$.next(itemHeight * remainingCount)
+    }
+  )
 
   return {
     gridDimensions: makeInput(gridDimensions$),
