@@ -19,7 +19,7 @@ const { ceil, floor, min, max } = Math
 
 const hackFloor = (val: number) => (ceil(val) - val < 0.03 ? ceil(val) : floor(val))
 
-const getItemsPerRow = (viewportWidth: number, itemWidth: number) => hackFloor(viewportWidth / itemWidth)
+const calculateItemsPerRow = (viewportWidth: number, itemWidth: number) => hackFloor(viewportWidth / itemWidth)
 
 const toRowIndex = (index: number, itemsPerRow: number, roundFunc = floor) => roundFunc(index / itemsPerRow)
 
@@ -50,7 +50,7 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
         }
 
         const [startIndex, endIndex] = itemRange
-        const itemsPerRow = getItemsPerRow(viewportWidth, itemWidth)
+        const itemsPerRow = calculateItemsPerRow(viewportWidth, itemWidth)
 
         const updateRange = (down: boolean): void => {
           const [topOverscan, bottomOverscan] = down ? [0, overscan] : [overscan, 0]
@@ -142,7 +142,7 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
       }
 
       const [, endIndex] = itemRange
-      const itemsPerRow = getItemsPerRow(viewportWidth, itemWidth)
+      const itemsPerRow = calculateItemsPerRow(viewportWidth, itemWidth)
       const remainingCount = toRowIndex(max(totalCount - endIndex - 1, 0), itemsPerRow, ceil)
 
       remainingHeight$.next(itemHeight * remainingCount)
