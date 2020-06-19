@@ -29,6 +29,7 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
   const listOffset$ = subject(0)
   const scrollToIndex$ = coldSubject<TScrollLocation>()
   const rangeChanged$ = coldSubject<ListRange>()
+  const endThreshold$ = subject(0)
 
   combineLatest(gridDimensions$, scrollTop$, overscan$, totalCount$)
     .pipe(withLatestFrom(itemRange$))
@@ -119,12 +120,12 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
   const endReached$ = coldSubject<number>()
   let currentEndIndex = 0
 
-  itemRange$.pipe(withLatestFrom(totalCount$)).subscribe(([[_, endIndex], totalCount]) => {
+  itemRange$.pipe(withLatestFrom(totalCount$, endThreshold$)).subscribe(([[_, endIndex], totalCount, endThreshold]) => {
     if (totalCount === 0) {
       return
     }
 
-    if (endIndex === totalCount - 1) {
+    if (endIndex >= totalCount - endThreshold) {
       if (currentEndIndex !== endIndex) {
         currentEndIndex = endIndex
         endReached$.next(endIndex)
@@ -138,6 +139,7 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
     scrollTop: makeInput(scrollTop$),
     overscan: makeInput(overscan$),
     scrollToIndex: makeInput(scrollToIndex$),
+    endThreshold: makeInput(endThreshold$),
 
     itemRange: makeOutput(itemRange$),
     remainingHeight: makeOutput(remainingHeight$),
