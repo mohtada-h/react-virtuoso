@@ -27,7 +27,7 @@ export interface VirtuosoGridProps {
   initialItemCount?: number
   rangeChanged?: TSubscriber<ListRange>
   computeItemKey?: (index: number) => number
-  threshold?: number
+  endThreshold?: number
 }
 
 type VirtuosoGridState = ReturnType<typeof VirtuosoGridEngine>
@@ -51,7 +51,7 @@ export class VirtuosoGrid extends React.PureComponent<VirtuosoGridProps, Virtuos
     engine.isScrolling(props.scrollingStateChange)
     engine.endReached(props.endReached)
     engine.rangeChanged(props.rangeChanged)
-    engine.threshold(props.threshold || 1)
+    engine.endThreshold(props.endThreshold || 1)
     return null
   }
 
