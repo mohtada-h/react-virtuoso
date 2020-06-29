@@ -22,12 +22,14 @@ export interface VirtuosoGridProps {
   ItemContainer?: TContainer
   listClassName?: string
   itemClassName?: string
+  containerClassName?: string
   scrollingStateChange?: (isScrolling: boolean) => void
   endReached?: (index: number) => void
   initialItemCount?: number
   rangeChanged?: TSubscriber<ListRange>
   computeItemKey?: (index: number) => number
   endThreshold?: number
+  viewportElement: HTMLElement
 }
 
 type VirtuosoGridState = ReturnType<typeof VirtuosoGridEngine>
@@ -91,9 +93,11 @@ const VirtuosoGridFC: React.FC<VirtuosoGridFCProps> = ({
   item,
   itemClassName = 'virtuoso-grid-item',
   listClassName = 'virtuoso-grid-list',
+  containerClassName = 'virtuoso-grid-container',
   engine,
   style = { height: '40rem' },
   computeItemKey = key => key,
+  viewportElement,
 }) => {
   const { itemRange, listOffset, remainingHeight, gridDimensions, scrollTo, scrollTop } = engine
 
@@ -103,8 +107,9 @@ const VirtuosoGridFC: React.FC<VirtuosoGridFCProps> = ({
   const itemIndexRange = useOutput(itemRange, [0, 0] as [number, number])
 
   const viewportCallbackRef = useSize(({ element, width, height }) => {
+    const viewportHeight = viewportElement ? viewportElement.offsetHeight : height
     const firstItem = element.firstChild!.firstChild as HTMLElement
-    gridDimensions([width, height, firstItem.offsetWidth, firstItem.offsetHeight])
+    gridDimensions([width, viewportHeight, firstItem.offsetWidth, firstItem.offsetHeight])
   })
 
   return (
@@ -115,7 +120,7 @@ const VirtuosoGridFC: React.FC<VirtuosoGridFCProps> = ({
       scrollTo={scrollTo}
       scrollTop={scrollTop}
     >
-      <div ref={viewportCallbackRef} style={viewportStyle}>
+      <div ref={viewportCallbackRef} style={viewportStyle} className={containerClassName}>
         {React.createElement(
           ListContainer,
           {
