@@ -34,14 +34,15 @@ export interface VirtuosoGridProps {
 
 type VirtuosoGridState = ReturnType<typeof VirtuosoGridEngine>
 
-type VirtuosoGridFCProps = Omit<VirtuosoGridProps, 'overscan' | 'totalCount'> & { engine: VirtuosoGridState }
+type VirtuosoGridFCProps = Omit<VirtuosoGridProps, 'overscan'> & { engine: VirtuosoGridState }
 
 type TItemBuilder = (
   range: [number, number],
   item: (index: number) => ReactElement,
   itemClassName: string,
   ItemContainer: TContainer,
-  computeItemKey: (index: number) => number
+  computeItemKey: (index: number) => number,
+  totalCount: number
 ) => ReactElement[]
 
 export class VirtuosoGrid extends React.PureComponent<VirtuosoGridProps, VirtuosoGridState> {
@@ -66,9 +67,17 @@ export class VirtuosoGrid extends React.PureComponent<VirtuosoGridProps, Virtuos
   }
 }
 
-const buildItems: TItemBuilder = ([startIndex, endIndex], item, itemClassName, ItemContainer, computeItemKey) => {
+const buildItems: TItemBuilder = (
+  [startIndex, endIndex],
+  item,
+  itemClassName,
+  ItemContainer,
+  computeItemKey,
+  totalCount
+) => {
   const items = []
-  for (let index = startIndex; index <= endIndex; index++) {
+  const end = Math.min(endIndex, totalCount - 1)
+  for (let index = startIndex; index <= end; index++) {
     const key = computeItemKey(index)
     items.push(
       React.createElement(
@@ -98,6 +107,7 @@ const VirtuosoGridFC: React.FC<VirtuosoGridFCProps> = ({
   style = { height: '40rem' },
   computeItemKey = key => key,
   viewportElement,
+  totalCount,
 }) => {
   const { itemRange, listOffset, remainingHeight, gridDimensions, scrollTo, scrollTop } = engine
 
@@ -127,7 +137,7 @@ const VirtuosoGridFC: React.FC<VirtuosoGridFCProps> = ({
             style: listStyle,
             className: listClassName,
           },
-          buildItems(itemIndexRange, item, itemClassName, ItemContainer, computeItemKey)
+          buildItems(itemIndexRange, item, itemClassName, ItemContainer, computeItemKey, totalCount)
         )}
       </div>
     </VirtuosoScroller>
