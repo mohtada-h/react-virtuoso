@@ -1,4 +1,5 @@
-import React, { ReactElement } from 'react'
+import * as React from 'react'
+import { ReactElement } from 'react'
 import { coldSubject, combineLatest, duc, filter, map, subject, withLatestFrom } from '../src/tinyrx'
 import { buildIsScrolling } from './EngineCommons'
 import { adjustForPrependedItemsEngine } from './engines/adjustForPrependedItemsEngine'
@@ -49,6 +50,7 @@ const VirtuosoStore = ({
     itemHeights$,
     offsetList$,
     totalCount$,
+    headerHeight$,
     footerHeight$,
     totalHeight$,
     heightsChanged$,
@@ -79,13 +81,14 @@ const VirtuosoStore = ({
     heightsChanged$,
   })
 
-  const { listHeight$, list$, listOffset$, endReached$ } = listEngine({
+  const { listHeight$, list$, listOffset$, startReached$, endReached$ } = listEngine({
     overscan,
     defaultItemHeight,
     viewportHeight$,
     scrollTop$,
     totalHeight$,
     topListHeight$,
+    headerHeight$,
     footerHeight$,
     minListIndex$,
     totalCount$,
@@ -134,7 +137,7 @@ const VirtuosoStore = ({
 
   const scrollTopMultiplier$ = combineLatest(totalHeight$, domTotalHeight$, viewportHeight$).pipe(
     map(([totalHeight, domTotalHeight, viewportHeight]) => {
-      if (totalHeight === domTotalHeight) {
+      if (totalHeight === domTotalHeight || domTotalHeight === viewportHeight) {
         return 1
       }
       return (totalHeight - viewportHeight) / (domTotalHeight - viewportHeight)
@@ -200,6 +203,7 @@ const VirtuosoStore = ({
   return {
     groupCounts: makeInput(groupCounts$),
     itemHeights: makeInput(itemHeights$),
+    headerHeight: makeInput(headerHeight$),
     footerHeight: makeInput(footerHeight$),
     listHeight: makeInput(listHeight$),
     viewportHeight: makeInput(viewportHeight$),
@@ -229,6 +233,7 @@ const VirtuosoStore = ({
     topList: makeOutput(topList$),
     listOffset: makeOutput(domListOffset$),
     totalHeight: makeOutput(domTotalHeight$),
+    startReached: makeOutput(startReached$),
     endReached: makeOutput(endReached$),
     atBottomStateChange: makeOutput(scrolledToBottom$),
     totalListHeightChanged: makeOutput(totalHeight$),

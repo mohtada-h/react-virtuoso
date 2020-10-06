@@ -1,4 +1,14 @@
-import React, { CSSProperties, FC, forwardRef, ReactElement, useImperativeHandle, useEffect, useState } from 'react'
+import * as React from 'react'
+import {
+  CSSProperties,
+  FC,
+  forwardRef,
+  ReactElement,
+  useImperativeHandle,
+  useEffect,
+  useState,
+  ComponentType,
+} from 'react'
 import { TScrollLocation } from './EngineCommons'
 import { ListRange, ScrollSeekConfiguration } from './engines/scrollSeekEngine'
 import { ListItem } from './GroupIndexTransposer'
@@ -6,7 +16,14 @@ import { TSubscriber } from './tinyrx'
 import { VirtuosoContext } from './VirtuosoContext'
 import { TRenderProps } from './VirtuosoList'
 import { VirtuosoStore } from './VirtuosoStore'
-import { DefaultListContainer, TFooterContainer, TListContainer, TScrollContainer, VirtuosoView } from './VirtuosoView'
+import {
+  DefaultListContainer,
+  THeaderContainer,
+  TFooterContainer,
+  TListContainer,
+  TScrollContainer,
+  VirtuosoView,
+} from './VirtuosoView'
 
 export type VirtuosoState = ReturnType<typeof VirtuosoStore>
 
@@ -16,12 +33,14 @@ export interface VirtuosoProps {
   totalCount: number
   overscan?: number
   topItems?: number
+  header?: () => ReactElement
   footer?: () => ReactElement
   item: (index: number) => ReactElement
   computeItemKey?: (index: number) => React.Key
   prependItemCount?: number
   itemHeight?: number
   defaultItemHeight?: number
+  startReached?: () => void
   endReached?: (index: number) => void
   scrollingStateChange?: TSubscriber<boolean>
   atBottomStateChange?: TSubscriber<boolean>
@@ -35,39 +54,59 @@ export interface VirtuosoProps {
   initialTopMostItemIndex?: number
   followOutput?: boolean
   ScrollContainer?: TScrollContainer
+  HeaderContainer?: THeaderContainer
   FooterContainer?: TFooterContainer
   ListContainer?: TListContainer
   ItemContainer?: TItemContainer
   maxHeightCacheSize?: number
   scrollSeek?: ScrollSeekConfiguration
+  emptyComponent?: ComponentType
 }
 
 export interface TVirtuosoPresentationProps {
   contextValue: VirtuosoState
+  header?: () => ReactElement
   footer?: () => ReactElement
   style?: CSSProperties
   className?: string
   itemHeight?: number
   ScrollContainer?: TScrollContainer
+  HeaderContainer?: THeaderContainer
   FooterContainer?: TFooterContainer
   ListContainer?: TListContainer
+  emptyComponent?: ComponentType
 }
 
 export { TScrollContainer, TListContainer }
 
 const DEFAULT_STYLE = {}
 export const VirtuosoPresentation: FC<TVirtuosoPresentationProps> = React.memo(
-  ({ contextValue, style, className, footer, itemHeight, ScrollContainer, ListContainer, FooterContainer }) => {
+  ({
+    contextValue,
+    style,
+    className,
+    header,
+    footer,
+    itemHeight,
+    ScrollContainer,
+    ListContainer,
+    HeaderContainer,
+    FooterContainer,
+    emptyComponent,
+  }) => {
     return (
       <VirtuosoContext.Provider value={contextValue}>
         <VirtuosoView
           style={style || DEFAULT_STYLE}
           className={className}
+          header={header}
           footer={footer}
           fixedItemHeight={itemHeight !== undefined}
           ScrollContainer={ScrollContainer}
+          HeaderContainer={HeaderContainer}
           FooterContainer={FooterContainer}
           ListContainer={ListContainer || DefaultListContainer}
+          emptyComponent={emptyComponent}
         />
       </VirtuosoContext.Provider>
     )
@@ -98,6 +137,7 @@ export const Virtuoso = forwardRef<VirtuosoMethods, VirtuosoProps>((props, ref) 
   useEffect(() => {
     state.isScrolling(props.scrollingStateChange)
     state.atBottomStateChange(props.atBottomStateChange)
+    state.startReached(props.startReached)
     state.endReached(props.endReached)
     state.topItemCount(props.topItems || 0)
     state.totalCount(props.totalCount)
@@ -121,6 +161,7 @@ export const Virtuoso = forwardRef<VirtuosoMethods, VirtuosoProps>((props, ref) 
     state,
     props.scrollingStateChange,
     props.atBottomStateChange,
+    props.startReached,
     props.endReached,
     props.topItems,
     props.totalCount,
@@ -142,11 +183,14 @@ export const Virtuoso = forwardRef<VirtuosoMethods, VirtuosoProps>((props, ref) 
       contextValue={state}
       style={props.style}
       className={props.className}
+      header={props.header}
       footer={props.footer}
       itemHeight={props.itemHeight}
       ScrollContainer={props.ScrollContainer}
+      HeaderContainer={props.HeaderContainer}
       FooterContainer={props.FooterContainer}
       ListContainer={props.ListContainer}
+      emptyComponent={props.emptyComponent}
     />
   )
 })

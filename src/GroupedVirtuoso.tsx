@@ -1,4 +1,5 @@
-import React, { forwardRef, ReactElement, useImperativeHandle, useState, useEffect } from 'react'
+import * as React from 'react'
+import { forwardRef, ReactElement, useImperativeHandle, useState, useEffect } from 'react'
 import { TScrollLocation } from './EngineCommons'
 import { TItemContainer, VirtuosoPresentation, VirtuosoProps } from './Virtuoso'
 import { VirtuosoStore } from './VirtuosoStore'
@@ -28,6 +29,7 @@ export const GroupedVirtuoso = forwardRef<GroupedVirtuosoMethods, GroupedVirtuos
   )
 
   useEffect(() => {
+    state.startReached(props.startReached)
     state.endReached(props.endReached)
     state.rangeChanged(props.rangeChanged)
     state.atBottomStateChange(props.atBottomStateChange)
@@ -48,6 +50,7 @@ export const GroupedVirtuoso = forwardRef<GroupedVirtuosoMethods, GroupedVirtuos
     }
   }, [
     state,
+    props.startReached,
     props.endReached,
     props.rangeChanged,
     props.atBottomStateChange,
@@ -68,9 +71,11 @@ export const GroupedVirtuoso = forwardRef<GroupedVirtuosoMethods, GroupedVirtuos
       contextValue={state}
       style={props.style}
       className={props.className}
+      header={props.header}
       footer={props.footer}
       itemHeight={props.itemHeight}
       ScrollContainer={props.ScrollContainer}
+      HeaderContainer={props.HeaderContainer}
       FooterContainer={props.FooterContainer}
       ListContainer={props.ListContainer}
     />

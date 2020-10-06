@@ -3,19 +3,16 @@ import { useState } from 'react'
 import * as ReactDOM from 'react-dom'
 import { Virtuoso } from '../src/'
 
-const GenerateItem = (index: number) => <div style={{ height: '40px' }}>{index}</div>
-
 const App = () => {
-  const [count, setCount] = useState(20)
-
+  const [count, setCount] = useState(0)
   return (
     <div>
-      <button onClick={() => setCount(count + 10)}>Add 10</button>
+      <button onClick={() => setCount(count === 0 ? 10000 : 0)}>Toggle</button>
       <Virtuoso
         totalCount={count}
-        item={GenerateItem}
+        emptyComponent={() => 'No Items'}
         style={{ height: '400px', width: '350px' }}
-        scrollingStateChange={scrollState => console.log({ scrollState })}
+        item={index => <div>Item {index}</div>}
       />
     </div>
   )

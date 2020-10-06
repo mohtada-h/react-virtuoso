@@ -1,19 +1,29 @@
+import * as React from 'react'
 import { subject, map, combineLatest, withLatestFrom, coldSubject } from './tinyrx'
 import { makeInput, makeOutput } from './rxio'
-import { TScrollLocation, buildIsScrolling } from './EngineCommons'
-import { ListRange } from './engines/scrollSeekEngine'
+import { TScrollLocation, TContainer, buildIsScrolling } from './EngineCommons'
+import { ListRange, scrollSeekEngine } from './engines/scrollSeekEngine'
 
 type GridDimensions = [
   number, // container width,
   number, // container height,
-  number | undefined, // item width,
-  number | undefined // item height
+  number | undefined, // item container width,
+  number | undefined, // item container height
+  number | undefined, // item content width
+  number | undefined // item content height
 ]
 
 type GridItemRange = [
   number, // start index
   number // end index
 ]
+
+type GridItemsRenderer = (
+  item: (index: number) => React.ReactElement,
+  itemClassName: string,
+  ItemContainer: TContainer,
+  computeItemKey: (index: number) => number
+) => React.ReactElement[]
 
 const { ceil, floor, min, max } = Math
 
@@ -24,7 +34,8 @@ const calculateItemsPerRow = (viewportWidth: number, itemWidth: number) => hackF
 const toRowIndex = (index: number, itemsPerRow: number, roundFunc = floor) => roundFunc(index / itemsPerRow)
 
 export const VirtuosoGridEngine = (initialItemCount = 0) => {
-  const gridDimensions$ = subject<GridDimensions>([0, 0, undefined, undefined])
+  const itemsRender = subject<any>(false)
+  const gridDimensions$ = subject<GridDimensions>([0, 0, undefined, undefined, undefined, undefined])
   const totalCount$ = subject(0)
   const scrollTop$ = subject(0)
   const overscan$ = subject(0)
@@ -95,7 +106,7 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
         location = { index: location, align: 'start' }
       }
 
-      let { index, align = 'start' } = location
+      let { index, align = 'start', behavior = 'auto' } = location
 
       index = Math.max(0, index, Math.min(totalCount - 1, index))
 
@@ -109,7 +120,7 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
         offset = Math.round(offset - viewportHeight / 2 + itemHeight / 2)
       }
 
-      return { top: offset, behavior: 'auto' } as ScrollToOptions
+      return { top: offset, behavior } as ScrollToOptions
     })
   )
 
@@ -130,6 +141,49 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
       }
     }
   })
+
+  const { isSeeking$, scrollSeekConfiguration$ } = scrollSeekEngine({
+    scrollTop$,
+    isScrolling$,
+    rangeChanged$,
+  })
+
+  combineLatest(itemRange$, isSeeking$, scrollSeekConfiguration$, gridDimensions$)
+    .pipe(
+      map(([[startIndex, endIndex], renderPlaceholder, scrollSeek, [_, __, ___, ____, _____, itemHeight]]) => {
+        const render: GridItemsRenderer = (item, itemClassName, ItemContainer, computeItemKey) => {
+          const items = []
+          for (let index = startIndex; index <= endIndex; index++) {
+            const key = computeItemKey(index)
+            let children: React.ReactElement
+
+            if (scrollSeek && renderPlaceholder && itemHeight) {
+              children = React.createElement(scrollSeek.placeholder, {
+                height: itemHeight,
+                index,
+              })
+            } else {
+              children = item(index)
+            }
+
+            items.push(
+              React.createElement(
+                ItemContainer,
+                {
+                  key,
+                  className: itemClassName,
+                },
+                children
+              )
+            )
+          }
+
+          return items
+        }
+        return { render }
+      })
+    )
+    .subscribe(itemsRender.next)
 
   combineLatest(gridDimensions$, totalCount$, itemRange$).subscribe(
     ([[viewportWidth, _, itemWidth, itemHeight], totalCount, itemRange]) => {
@@ -156,8 +210,10 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
     scrollTop: makeInput(scrollTop$),
     overscan: makeInput(overscan$),
     scrollToIndex: makeInput(scrollToIndex$),
+    scrollSeekConfiguration: makeInput(scrollSeekConfiguration$),
     endThreshold: makeInput(endThreshold$),
 
+    itemsRender: makeOutput(itemsRender),
     itemRange: makeOutput(itemRange$),
     remainingHeight: makeOutput(remainingHeight$),
     listOffset: makeOutput(listOffset$),

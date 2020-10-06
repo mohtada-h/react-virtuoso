@@ -10,6 +10,7 @@ interface ListEngineParams {
   viewportHeight$: TObservable<number>
   scrollTop$: TObservable<number>
   topListHeight$: TObservable<number>
+  headerHeight$: TObservable<number>
   footerHeight$: TObservable<number>
   minListIndex$: TObservable<number>
   totalCount$: TObservable<number>
@@ -25,6 +26,7 @@ export function listEngine({
   viewportHeight$,
   scrollTop$,
   topListHeight$,
+  headerHeight$,
   footerHeight$,
   minListIndex$,
   totalCount$,
@@ -34,6 +36,7 @@ export function listEngine({
   totalHeight$,
 }: ListEngineParams) {
   const listHeight$ = subject(0)
+  const startReached$ = coldSubject<number>()
   const endReached$ = coldSubject<number>()
   const list$ = subject<ListItem[]>([])
 
@@ -50,6 +53,7 @@ export function listEngine({
     constrainedScrollTop$,
     topListHeight$,
     listHeight$,
+    headerHeight$,
     footerHeight$,
     minListIndex$,
     totalCount$,
@@ -66,6 +70,7 @@ export function listEngine({
             scrollTop,
             topListHeight,
             listHeight,
+            headerHeight,
             footerHeight,
             minIndex,
             totalCount,
@@ -82,7 +87,7 @@ export function listEngine({
 
           const listTop = getListTop(items)
 
-          const listBottom = listTop - scrollTop + listHeight - footerHeight - topListHeight
+          const listBottom = listTop - scrollTop + listHeight - headerHeight - footerHeight - topListHeight
           const maxIndex = Math.max(totalCount - 1, 0)
           const indexOutOfAllowedRange =
             itemLength > 0 && (items[0].index < minIndex || items[itemLength - 1].index > maxIndex)
@@ -116,6 +121,12 @@ export function listEngine({
 
   const listOffset$ = combineLatest(list$, scrollTop$, topListHeight$).pipe(map(([items]) => getListTop(items)))
 
+  constrainedScrollTop$.subscribe(scrollTop => {
+    if (scrollTop === 0) {
+      startReached$.next(scrollTop)
+    }
+  })
+
   let currentEndIndex = 0
 
   list$
@@ -134,5 +145,5 @@ export function listEngine({
       }
     })
 
-  return { list$, listOffset$, listHeight$, endReached$ }
+  return { list$, listOffset$, listHeight$, startReached$, endReached$ }
 }
