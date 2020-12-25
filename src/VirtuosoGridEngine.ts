@@ -22,7 +22,8 @@ type GridItemsRenderer = (
   item: (index: number) => React.ReactElement,
   itemClassName: string,
   ItemContainer: TContainer,
-  computeItemKey: (index: number) => number
+  computeItemKey: (index: number) => number,
+  totalCount: number
 ) => React.ReactElement[]
 
 const { ceil, floor, min, max } = Math
@@ -151,9 +152,10 @@ export const VirtuosoGridEngine = (initialItemCount = 0) => {
   combineLatest(itemRange$, isSeeking$, scrollSeekConfiguration$, gridDimensions$)
     .pipe(
       map(([[startIndex, endIndex], renderPlaceholder, scrollSeek, [_, __, ___, ____, _____, itemHeight]]) => {
-        const render: GridItemsRenderer = (item, itemClassName, ItemContainer, computeItemKey) => {
+        const render: GridItemsRenderer = (item, itemClassName, ItemContainer, computeItemKey, totalCount) => {
           const items = []
-          for (let index = startIndex; index <= endIndex; index++) {
+          const end = Math.min(endIndex, totalCount - 1)
+          for (let index = startIndex; index <= end; index++) {
             const key = computeItemKey(index)
             let children: React.ReactElement
 

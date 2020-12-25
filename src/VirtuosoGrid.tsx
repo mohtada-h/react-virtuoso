@@ -32,7 +32,7 @@ export interface VirtuosoGridProps {
 
 type VirtuosoGridState = ReturnType<typeof VirtuosoGridEngine>
 
-type VirtuosoGridFCProps = Omit<VirtuosoGridProps, 'overscan' | 'totalCount'> & { engine: VirtuosoGridState }
+type VirtuosoGridFCProps = Omit<VirtuosoGridProps, 'overscan'> & { engine: VirtuosoGridState }
 
 export class VirtuosoGrid extends React.PureComponent<VirtuosoGridProps, VirtuosoGridState> {
   public state = VirtuosoGridEngine(this.props.initialItemCount)
@@ -70,26 +70,32 @@ const VirtuosoGridFC: React.FC<VirtuosoGridFCProps> = ({
   style = { height: '100%' },
   computeItemKey = key => key,
   viewportElement,
+  totalCount,
 }) => {
   const { listOffset, remainingHeight, gridDimensions, scrollTo, scrollTop, itemsRender } = engine
 
   const fillerHeight = useOutput<number>(remainingHeight, 0)
   const translate = useOutput<number>(listOffset, 0)
   const listStyle = { paddingTop: `${translate}px`, paddingBottom: `${fillerHeight}px` }
-
   const render = useOutput(itemsRender, false)
 
   const viewportCallbackRef = useSize(({ element, width, height }) => {
+    const selectedFirstItem = element.querySelector(`.${itemClassName.replace(/\s+/g, '.')}`)
+    const firstItem = (selectedFirstItem || element.firstChild!.firstChild) as HTMLElement
+
+    if (!firstItem) {
+      return
+    }
+
     const viewportHeight = viewportElement ? viewportElement.offsetHeight : height
-    const firstItem = element.firstChild!.firstChild as HTMLElement
-    const firstItemContent = firstItem!.firstChild as HTMLElement
+    const firstItemContent = firstItem.firstChild as HTMLElement
     gridDimensions([
       width,
       viewportHeight,
       firstItem.offsetWidth,
       firstItem.offsetHeight,
-      firstItemContent.offsetWidth,
-      firstItemContent.offsetHeight,
+      firstItemContent?.offsetWidth,
+      firstItemContent?.offsetHeight,
     ])
   })
 
@@ -108,7 +114,7 @@ const VirtuosoGridFC: React.FC<VirtuosoGridFCProps> = ({
             style: listStyle,
             className: listClassName,
           },
-          render.render(item, itemClassName, ItemContainer, computeItemKey)
+          render.render(item, itemClassName, ItemContainer, computeItemKey, totalCount)
         )}
       </div>
     </VirtuosoScroller>
