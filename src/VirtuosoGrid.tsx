@@ -80,10 +80,13 @@ const VirtuosoGridFC: React.FC<VirtuosoGridFCProps> = ({
   const render = useOutput(itemsRender, false)
 
   const viewportCallbackRef = useSize(({ element, width, height }) => {
-    const firstItem = element.firstChild!.firstChild as HTMLElement
+    const selectedFirstItem = element.querySelector(`.${itemClassName.replace(/\s+/g, '.')}`)
+    const firstItem = (selectedFirstItem || element.firstChild!.firstChild) as HTMLElement
+
     if (!firstItem) {
       return
     }
+
     const viewportHeight = viewportElement ? viewportElement.offsetHeight : height
     const firstItemContent = firstItem.firstChild as HTMLElement
     gridDimensions([
